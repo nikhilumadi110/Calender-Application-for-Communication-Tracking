@@ -1,4 +1,3 @@
-// src/components/Auth/Login.jsx
 import React from 'react';
 import { TextField, Button, Box, Typography, CircularProgress, Paper } from '@mui/material';
 import { useAuth } from '../../context/AuthContext';
@@ -121,15 +120,6 @@ const Login = () => {
             )}
           </Button>
 
-          <Typography
-            variant="body2"
-            align="center"
-            sx={{ mt: 2, color: 'text.secondary' }}
-          >
-            Demo credentials:<br />
-            Admin: username: "admin" / password: "admin"<br />
-            User: username: "user" / password: "user123"
-          </Typography>
         </form>
       </Paper>
     </Box>
