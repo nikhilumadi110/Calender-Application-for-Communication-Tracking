@@ -83,4 +83,4 @@ This application is designed to streamline the tracking of communications with v
   
 ## Deployment
 
-The application is deployed on Vercel: calender-application-for-communication-tracking.vercel.app
+The application is deployed on Vercel: https://calender-application-for-communication-tracking.vercel.app
