@@ -1,4 +1,4 @@
-# Communication Tracking Application
+# Calender Application for Communication Tracking
 
 ## Description
 
