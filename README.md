@@ -80,16 +80,9 @@ This application is designed to streamline the tracking of communications with v
 *   Currently all the data is stored on the local storage, so once clear the local storage data will be lost.
 *   The validation for the phone number is added as per the mentioned format in requirement document.
 *   The number of emails and phone numbers are restricted to 5, for better UI handling.
-<<<<<<< HEAD
 
-
-
-## Deployment
-
-The application is deployed on Vercel: https://calender-application-for-communication-tracking-oz6m80zha.vercel.app
-=======
   
 ## Deployment
 
-The application is deployed on Vercel: https://calender-application-for-communication-tracking-oz6m80zha.vercel.app
->>>>>>> dbb4485583bce5d51c44b88cbab198cc905d27f4
+The application is deployed on Vercel: https://calender-application-for-communication-tracking.vercel.app
+
