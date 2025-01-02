@@ -1,42 +1,63 @@
 // src/components/UserModule/useUserModule.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { COMPANIES_KEY, COMMUNICATION_METHODS_KEY } from '../../utils/constants';
 import { format, addDays, isAfter, isSameDay } from 'date-fns';
 import { useLoading } from '../../context/LoadingContext';
+import { toast } from 'react-toastify';
+
 
 const useUserModule = () => {
     const [companies, setCompanies] = useState(() => {
         const storedCompanies = localStorage.getItem(COMPANIES_KEY);
-        if(storedCompanies) {
-            return JSON.parse(storedCompanies);
-        }
-        return [];
+         try {
+            return storedCompanies ? JSON.parse(storedCompanies) : [];
+          } catch (error) {
+                console.error("Error parsing companies from local storage", error);
+                toast.error("Error loading companies. Please try again later.", { theme: 'colored'});
+                return [];
+          }
     });
     const [communicationMethods, setCommunicationMethods] = useState(() => {
         const storedMethods = localStorage.getItem(COMMUNICATION_METHODS_KEY);
-        if(storedMethods) {
-            return JSON.parse(storedMethods);
-        }
-        return [];
+          try {
+            return storedMethods ? JSON.parse(storedMethods) : [];
+          } catch (error) {
+              console.error("Error parsing communication methods from local storage", error);
+                toast.error("Error loading communication methods. Please try again later.", { theme: 'colored'});
+                return [];
+            }
     });
     const [communications, setCommunications] = useState(() => {
         const storedCommunications = localStorage.getItem('communications');
-        if(storedCommunications){
-            return JSON.parse(storedCommunications);
+         try {
+            return storedCommunications ? JSON.parse(storedCommunications) : [];
+        } catch (error) {
+            console.error("Error parsing communications from local storage", error);
+            toast.error("Error loading communications. Please try again later.", { theme: 'colored'});
+            return [];
         }
-        return [];
     });
 
       const { setLoading } = useLoading();
 
-    useEffect(() => {
-        localStorage.setItem('communications',JSON.stringify(communications));
-    }, [communications]);
+    // Function to persist data to local storage
+   const persistData = useCallback((key, data) => {
+        try {
+           localStorage.setItem(key, JSON.stringify(data));
+        } catch(error) {
+           console.error(`Error saving ${key} to local storage`, error)
+             toast.error(`Error saving data. Please try again later.`, { theme: 'colored'});
+        }
+    },[]);
 
     useEffect(() => {
-        localStorage.setItem(COMPANIES_KEY, JSON.stringify(companies));
-    }, [companies]);
+        persistData('communications', communications)
+    }, [communications, persistData]);
+
+    useEffect(() => {
+       persistData(COMPANIES_KEY, companies);
+    }, [companies, persistData]);
 
 
     const logCommunication = async (companyId, communicationData) => {
@@ -48,7 +69,7 @@ const useUserModule = () => {
                 ...communicationData,
                date: new Date(communicationData.date).toISOString(),
             };
-            setCommunications([...communications, newCommunication]);
+            setCommunications(prevCommunications => [...prevCommunications, newCommunication]);
             setCompanies((prevCompanies) => {
                 return prevCompanies.map((company) => {
                     if(company.id === companyId){
@@ -58,10 +79,12 @@ const useUserModule = () => {
                    return company;
                })
            })
+           toast.success("Communication logged successfully", { theme: "colored" })
         } catch (error) {
            console.error("Error logging communication:", error);
+           toast.error("Failed to log communication. Please try again later.", { theme: 'colored' })
              // rethrow the error for the error boundary
-            throw new Error("Failed to log communication.");
+           throw new Error("Failed to log communication.");
         } finally {
            setLoading(false);
         }
@@ -89,8 +112,10 @@ const useUserModule = () => {
                    return company;
              });
         });
+       toast.success("Communication updated successfully", { theme: "colored" })
      } catch (error) {
           console.error("Error updating communication:", error);
+            toast.error("Failed to update communication. Please try again later.", { theme: 'colored' })
         throw new Error("Failed to update communication.");
        } finally {
          setLoading(false);
@@ -103,8 +128,10 @@ const useUserModule = () => {
          setCommunications(prevCommunications => {
            return prevCommunications.filter(comm => comm.id !== communicationId)
           })
+             toast.success("Communication deleted successfully", { theme: "colored" })
         } catch(error){
              console.error("Error deleting communication:", error);
+           toast.error("Failed to delete communication. Please try again later.", { theme: 'colored' })
            throw new Error("Failed to delete communication.");
         }finally {
              setLoading(false);

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+// src/components/UserModule/CompanyGrid.jsx
+import React, { useState, useEffect, useMemo } from 'react';
 import useUserModule from './useUserModule.js';
 import { format } from 'date-fns';
 import {
@@ -23,7 +24,8 @@ import {
     alpha,
     Typography,
     Switch,
-    Tooltip
+    Tooltip,
+     CircularProgress,
 } from '@mui/material';
 
 // Styled components
@@ -122,37 +124,32 @@ const CompanyGrid = () => {
         communicationMethods,
         getCompanyCommunication,
         getCompanyNextCommunications,
+        getCompanyNextCommunication,
         isOverdue,
         isDueToday
     } = useUserModule();
 
     const [searchQuery, setSearchQuery] = useState('');
-    const [sortedCompanies, setSortedCompanies] = useState([]);
-    const [highlightSettings, setHighlightSettings] = useState({});
+      const [highlightSettings, setHighlightSettings] = useState({});
+    const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        // Initialize highlight settings for all companies
-        const initialSettings = companies.reduce((acc, company) => ({
-            ...acc,
-            [company.id]: true // Default to enabled
+
+      useEffect(() => {
+           setLoading(true);
+         // Initialize highlight settings for all companies
+         const initialSettings = companies.reduce((acc, company) => ({
+           ...acc,
+             [company.id]: true // Default to enabled
         }), {});
         setHighlightSettings(initialSettings);
+           setLoading(false);
+      }, [companies]);
 
-        // Sort companies
-        const sorted = [...companies].sort((a, b) => {
-            if (a.createdAt && b.createdAt) {
-                return new Date(b.createdAt) - new Date(a.createdAt);
-            }
-            return b.id.localeCompare(a.id);
-        });
-        setSortedCompanies(sorted);
-    }, [companies]);
+      const formatDate = (date) => {
+          if (!date) return 'N/A';
+           return format(new Date(date), 'MMM do, yyyy');
+     };
 
-
-    const formatDate = (date) => {
-        if (!date) return 'N/A';
-        return format(new Date(date), 'MMM do, yyyy');
-    };
 
     const toggleHighlight = (companyId) => {
         setHighlightSettings(prev => ({
@@ -161,9 +158,11 @@ const CompanyGrid = () => {
         }));
     };
 
-    const filteredCompanies = sortedCompanies.filter(company =>
-        company.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredCompanies = useMemo(() => {
+       return companies.filter(company =>
+           company.name.toLowerCase().includes(searchQuery.toLowerCase())
+         )
+     }, [companies, searchQuery]);
 
     return (
         <Box sx={{ maxWidth: 1200, margin: '0 auto', padding: 3 }}>
@@ -182,16 +181,15 @@ const CompanyGrid = () => {
                     />
                 </Search>
             </Box>
-
-            <StyledTableContainer component={Paper}>
+              <StyledTableContainer component={Paper}>
                 <Table>
-                    <TableHead>
+                   <TableHead>
                         <TableRow>
                             <TableCell width="5%">
                                 <Typography variant="subtitle2" fontWeight="bold">#</Typography>
-                            </TableCell>
+                           </TableCell>
                             <TableCell width="20%">
-                                <Typography variant="subtitle2" fontWeight="bold">Company Name</Typography>
+                                 <Typography variant="subtitle2" fontWeight="bold">Company Name</Typography>
                             </TableCell>
                             <TableCell width="45%">
                                 <Typography variant="subtitle2" fontWeight="bold">Last Five Communications</Typography>
@@ -204,100 +202,103 @@ const CompanyGrid = () => {
                             </TableCell>
                         </TableRow>
                     </TableHead>
-                    <TableBody>
-                        {filteredCompanies.map((company, index) => {
-                            const lastFiveCommunications = getCompanyCommunication(company.id).slice(0, 5);
-                            const nextCommunications = getCompanyNextCommunications(company);
-                            const companyIsOverdue = isOverdue(company);
-                            const companyIsDueToday = isDueToday(company);
-                            const highlightsEnabled = highlightSettings[company.id];
-
-                            return (
-                                <TableRow key={company.id}>
-                                    <TableCell>
-                                        <Typography>{index + 1}</Typography>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Typography variant="body1" fontWeight="medium">
-                                            {company.name}
-                                        </Typography>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                            {lastFiveCommunications.map(comm => {
-                                                const commType = communicationMethods.find(
-                                                    method => method.id === comm.communicationType
-                                                )?.name;
-
-                                                return (
+                     <TableBody>
+                         {loading ? (
+                              <TableRow>
+                                    <TableCell colSpan={5} align="center" sx={{p: 2}}> <CircularProgress /> </TableCell>
+                                </TableRow>
+                            ) : filteredCompanies.length > 0 ? (
+                                filteredCompanies.map((company, index) => {
+                                   const lastFiveCommunications = getCompanyCommunication(company.id).slice(0, 5);
+                                    const nextCommunication = getCompanyNextCommunication(company)
+                                    const nextCommType = company.nextCommunicationType
+                                        ? communicationMethods.find(method => method.id === company.nextCommunicationType)?.name
+                                          : null;
+                                    const companyIsOverdue = isOverdue(company);
+                                    const companyIsDueToday = isDueToday(company);
+                                    const highlightsEnabled = highlightSettings[company.id];
+                                  return (
+                                        <TableRow key={company.id}>
+                                           <TableCell>
+                                                 <Typography>{index + 1}</Typography>
+                                            </TableCell>
+                                             <TableCell>
+                                               <Typography variant="body1" fontWeight="medium">
+                                                    {company.name}
+                                                 </Typography>
+                                            </TableCell>
+                                             <TableCell>
+                                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                                    {lastFiveCommunications.map(comm => {
+                                                         const commType = communicationMethods.find(
+                                                             method => method.id === comm.communicationType
+                                                         )?.name;
+                                                          return (
+                                                             <Tooltip
+                                                                 key={comm.id}
+                                                                title={comm.notes || 'No notes available'}
+                                                                 arrow
+                                                                 placement="top"
+                                                            >
+                                                                <CommunicationCard>
+                                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
+                                                                        {getIconForCommunicationType(commType)}
+                                                                         <Typography variant="body2">
+                                                                             {commType || 'N/A'}
+                                                                          </Typography>
+                                                                    </Box>
+                                                                    <Typography variant="body2" color="text.secondary">
+                                                                        {formatDate(comm.date)}
+                                                                    </Typography>
+                                                                </CommunicationCard>
+                                                           </Tooltip>
+                                                          );
+                                                     })}
+                                              </Box>
+                                           </TableCell>
+                                              <TableCell>
                                                     <Tooltip
-                                                        key={comm.id}
-                                                        title={comm.notes || 'No notes available'}
-                                                        arrow
-                                                        placement="top"
-                                                    >
-                                                        <CommunicationCard>
-                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
-                                                                {getIconForCommunicationType(commType)}
-                                                                <Typography variant="body2">
-                                                                    {commType || 'N/A'}
-                                                                </Typography>
-                                                            </Box>
-                                                            <Typography variant="body2" color="text.secondary">
-                                                                {formatDate(comm.date)}
-                                                            </Typography>
-                                                        </CommunicationCard>
-                                                    </Tooltip>
-                                                );
-                                            })}
-                                        </Box>
-                                    </TableCell>
-                                     <TableCell>
-                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                            {nextCommunications.map((nextComm, index) => {
-
-                                              const nextCommType = company.nextCommunicationType
-                                                    ? communicationMethods.find(method => method.id === company.nextCommunicationType)?.name
-                                                    : null;
-
-                                                return (
-                                                    <Tooltip
-                                                        key={index}
-                                                        title= {`${nextComm ?  'No notes available' : ': None scheduled'}`}
-                                                        arrow
-                                                        placement="top"
-                                                    >
+                                                         title= {`${nextCommunication ?  'No notes available' : ': None scheduled'}`}
+                                                           arrow
+                                                           placement="top"
+                                                        >
                                                         <CommunicationCard
                                                             isOverdue={companyIsOverdue}
                                                             isDueToday={companyIsDueToday}
                                                             highlightsEnabled={highlightsEnabled}
-                                                        >
-                                                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
-                                                             {nextCommType &&  getIconForCommunicationType(nextCommType)}
-                                                                <Typography variant="body2">
-                                                                    {nextCommType || 'N/A'}
-                                                                 </Typography>
-                                                          </Box>
-                                                            <Typography variant="body2" color="text.secondary">
-                                                                {formatDate(nextComm)}
-                                                            </Typography>
-                                                        </CommunicationCard>
-                                                    </Tooltip>
-                                                );
-                                            })}
-                                        </Box>
-                                    </TableCell>
-                                    <TableCell align="center">
-                                        <Switch
-                                            checked={highlightSettings[company.id]}
-                                            onChange={() => toggleHighlight(company.id)}
-                                            color="primary"
-                                            size="small"
-                                        />
-                                    </TableCell>
-                                </TableRow>
-                            );
-                        })}
+                                                          >
+                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
+                                                                       {nextCommType &&  getIconForCommunicationType(nextCommType)}
+                                                                        <Typography variant="body2">
+                                                                            {nextCommType || 'N/A'}
+                                                                        </Typography>
+                                                                  </Box>
+                                                                    <Typography variant="body2" color="text.secondary">
+                                                                        {formatDate(nextCommunication)}
+                                                                     </Typography>
+                                                            </CommunicationCard>
+                                                        </Tooltip>
+                                              </TableCell>
+                                            <TableCell align="center">
+                                                 <Switch
+                                                     checked={highlightsEnabled}
+                                                     onChange={() => toggleHighlight(company.id)}
+                                                    color="primary"
+                                                    size="small"
+                                                 />
+                                           </TableCell>
+                                       </TableRow>
+                                    );
+                                })
+                            ) : (
+                                 <TableRow>
+                                       <TableCell colSpan={5} align="center" sx={{p: 2}}>
+                                           <Typography variant="body1" color="text.secondary">
+                                             No company data available for selected criteria.
+                                            </Typography>
+                                        </TableCell>
+                                  </TableRow>
+                                )}
                     </TableBody>
                 </Table>
             </StyledTableContainer>

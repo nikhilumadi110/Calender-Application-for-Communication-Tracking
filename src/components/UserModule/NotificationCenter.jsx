@@ -1,9 +1,6 @@
 // src/components/UserModule/NotificationCenter.jsx
 import React from 'react';
 import {
-    Dialog,
-    DialogTitle,
-    DialogContent,
     Typography,
     Box,
     List,
@@ -11,13 +8,21 @@ import {
     ListItemText,
     Grid,
     Paper,
-    IconButton
+    styled
 } from '@mui/material';
-import { Close as CloseIcon } from '@mui/icons-material';
 import useUserModule from './useUserModule.js';
 import { format } from 'date-fns';
 
-const NotificationCenter = ({ open, handleClose, totalOverDue, totalDueToday }) => {
+const StyledPaper = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(2),
+    transition: 'transform 0.2s ease-in-out',
+  '&:hover': {
+    transform: 'scale(1.02)',
+    backgroundColor: theme.palette.action.hover,
+  }
+}));
+
+const NotificationCenter = ({  totalOverDue, totalDueToday }) => {
     const { companies, isOverdue, isDueToday, getCompanyNextCommunication } = useUserModule();
     const overdueCompanies = companies.filter(company => isOverdue(company));
     const dueTodayCompanies = companies.filter(company => isDueToday(company));
@@ -27,23 +32,11 @@ const NotificationCenter = ({ open, handleClose, totalOverDue, totalDueToday }) 
     };
 
     return (
-        <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md"  PaperProps={{
-            style: {
-                maxHeight: '70vh', // Increased the height a bit
-            },
-        }}>
-            <DialogTitle style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                 <Typography variant="h6" >Notifications</Typography>
-                   <IconButton onClick={handleClose} size="small" >
-                        <CloseIcon />
-                    </IconButton>
-            </DialogTitle>
-            <DialogContent >
-                 <Box mb={2}>
-                     </Box>
+       <Box>
+            <Typography variant="h4" color="text.primary" mb={2}>Notifications</Typography>
                  <Grid container spacing={2}>
                     <Grid item xs={12} md={6}>
-                      <Paper elevation={2} style={{ padding: '16px' }}>
+                      <StyledPaper elevation={2}>
                             <Typography variant="h6" className="text-gray-800 font-semibold mb-2">Overdue Communications</Typography>
                             {overdueCompanies.length === 0 ?
                                 <Typography className="text-gray-600">No overdue communications</Typography>
@@ -60,10 +53,10 @@ const NotificationCenter = ({ open, handleClose, totalOverDue, totalDueToday }) 
                                      </List>
                                 )
                             }
-                        </Paper>
+                        </StyledPaper>
                     </Grid>
                    <Grid item xs={12} md={6}>
-                        <Paper elevation={2} style={{ padding: '16px' }}>
+                        <StyledPaper elevation={2}>
                             <Typography variant="h6" className="text-gray-800 font-semibold mb-2">Due Today</Typography>
                             {dueTodayCompanies.length === 0 ?
                                 <Typography className="text-gray-600">No communications due today</Typography>
@@ -80,7 +73,7 @@ const NotificationCenter = ({ open, handleClose, totalOverDue, totalDueToday }) 
                                     </List>
                                 )
                             }
-                       </Paper>
+                       </StyledPaper>
                   </Grid>
               </Grid>
               <Box mt={3} textAlign="right">
@@ -88,8 +81,7 @@ const NotificationCenter = ({ open, handleClose, totalOverDue, totalDueToday }) 
                   Total overdue: {totalOverDue} , Total Due Today: {totalDueToday}
                 </Typography>
                </Box>
-            </DialogContent>
-        </Dialog>
+        </Box>
     );
 };
 

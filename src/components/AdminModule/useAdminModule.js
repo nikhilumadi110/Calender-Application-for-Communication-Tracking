@@ -1,42 +1,67 @@
 // src/components/AdminModule/useAdminModule.js
-import { useState, useEffect } from 'react';
-import { COMPANIES_KEY, COMMUNICATION_METHODS_KEY } from '../../utils/constants';
+import { useState, useEffect, useCallback } from 'react';
+import { COMPANIES_KEY, COMMUNICATION_METHODS_KEY, LOCAL_STORAGE_VERSION, LOCAL_STORAGE_VERSION_KEY } from '../../utils/constants';
 import { v4 as uuidv4 } from 'uuid';
 import { initialCompanies, initialMethods } from './initialData';
 
 
 const useAdminModule = () => {
+  // Function to clear local storage if version changes
+  const checkAndClearLocalStorage = () => {
+    const storedVersion = localStorage.getItem(LOCAL_STORAGE_VERSION_KEY);
+
+    if (storedVersion !== LOCAL_STORAGE_VERSION) {
+          localStorage.removeItem(COMPANIES_KEY);
+          localStorage.removeItem(COMMUNICATION_METHODS_KEY);
+          localStorage.setItem(LOCAL_STORAGE_VERSION_KEY, LOCAL_STORAGE_VERSION)
+        return true; // Data was cleared
+    }
+    return false; // No data was cleared
+};
+
   // State for managing companies
   const [companies, setCompanies] = useState(() => {
+    if (checkAndClearLocalStorage()) return initialCompanies;
     const storedCompanies = localStorage.getItem(COMPANIES_KEY);
-    if (storedCompanies) {
-      return JSON.parse(storedCompanies);
-    } else {
-      // Initial company data if local storage is empty
-      return initialCompanies
+    try {
+      return storedCompanies ? JSON.parse(storedCompanies) : initialCompanies;
+    } catch (error) {
+        console.error("Error parsing companies from local storage", error);
+        return initialCompanies;
     }
   });
 
   // State for managing communication methods
   const [communicationMethods, setCommunicationMethods] = useState(() => {
-    const storedMethods = localStorage.getItem(COMMUNICATION_METHODS_KEY);
-    if (storedMethods) {
-      return JSON.parse(storedMethods);
-    } else {
-      // Initial communication methods
-      return initialMethods
-    }
+      if (checkAndClearLocalStorage()) return initialMethods;
+      const storedMethods = localStorage.getItem(COMMUNICATION_METHODS_KEY);
+     try {
+      return storedMethods ? JSON.parse(storedMethods) : initialMethods;
+     } catch (error) {
+        console.error("Error parsing communication methods from local storage", error);
+        return initialMethods;
+     }
   });
+
+  // Function to persist data to local storage
+   const persistData = useCallback((key, data) => {
+        try {
+           localStorage.setItem(key, JSON.stringify(data));
+        } catch(error) {
+            console.error(`Error saving ${key} to local storage`, error)
+        }
+    },[]);
+
 
   // Update local storage when companies change
   useEffect(() => {
-    localStorage.setItem(COMPANIES_KEY, JSON.stringify(companies));
-  }, [companies]);
+        persistData(COMPANIES_KEY, companies)
+    }, [companies, persistData]);
 
   // Update local storage when communication methods change
   useEffect(() => {
-    localStorage.setItem(COMMUNICATION_METHODS_KEY, JSON.stringify(communicationMethods));
-  }, [communicationMethods]);
+        persistData(COMMUNICATION_METHODS_KEY, communicationMethods);
+  }, [communicationMethods, persistData]);
 
   // Function to add a new company
   const addCompany = (company) => {
